@@ -2,7 +2,8 @@ require 'rack'
 require 'rack/contrib'
 require 'sinatra'
 require './app/util'
-require './app/logic'
+require './app/sir_robin'
+require './app/sir_robin2'
 
 use Rack::PostBodyContentTypeParser
 # This function is called when you register your Battlesnake on play.battlesnake.com
@@ -36,7 +37,9 @@ post '/move' do
   content_type :json
 
   gamestate = underscore(env['rack.request.form_hash'])
-  move = find_next_move(gamestate)
+
+  snake = SirRobin2.new
+  move = snake.call(gamestate)
 
   response = camelcase({ "move": move }).to_json
   puts ">> #{response}"

@@ -10,55 +10,43 @@ def find_next_move(gamestate)
   snake_name = gamestate[:you][:name]
 
   map, current_loc = find_map(gamestate)
-  # puts_map(map)
+  puts_map(map)
 
   puts "#{snake_name}: current_loc: (%i,%i)" % current_loc.reverse
 
-  sir_robin(gamestate, map, current_loc)
-end
+  ## main logic
 
-def sir_robin(gamestate, map, current_loc)
-  # pseudocode:
-  # 1. if health < 20, go towards food
-  # 1. else find nearest enemy
-  # 1. avoid it!
+  # 1. If health is good, avoid enemies
+  # 2. If health is moderate, seek food but avoid head-to-head collisions on the food
+  # 3. If health is severe, seek food no matter what
 
   health = gamestate[:you][:health]
 
   if health >= 50
-    return avoid_enemies(gamestate, map, current_loc)
+    puts "+Avoiding enemies"
+    move = avoid_enemies(gamestate, map, current_loc)
+    return move
 
   elsif health < 20
-    food_loc, _ = find_nearest(map, current_loc, [FOOD_SYMBOL])
-
-    if !food_loc
-      move = avoid_enemies(gamestate, map, current_loc)
-      puts "!! No food available, so using avoid_enemies: %s" % move
-      return move
-    end
-
-    puts "nearest food_loc: (%i,%i)" % food_loc.reverse
-
-    # valid move towards food
-    move = find_valid_heading(map, current_loc, food_loc)
-
-    if move.nil?
-      move = find_escape(map, current_loc)
-      puts "!!! Can't find valid path to food, so trying to escape to the: %s" % move
-      return move
-    end
-
+    puts "+Nicely seeking food"
+    move = nicely_seek_food(gamestate, map, current_loc)
     return move
+
   else
-    return seek_food(gamestate, map, current_loc)
+    puts "+Desperately seeking food"
+    move = desperately_seek_food(gamestate, map, current_loc)
+    return move
   end
 end
 
-# pseudocode:
-# 1. find nearest food
-# 1. plot path to food
-# 1. if enemy head is adjacent to target square, avoid enemy to prevent head-to-head collision
-def seek_food(gamestate, map, current_loc)
+###
+### main behavior logic
+###
+
+# 1. Find nearest food
+# 2. Plot path to food
+# 3. if enemy head is adjacent to target square, run away to prevent head-to-head collision
+def nicely_seek_food(gamestate, map, current_loc)
   food_loc, _ = find_nearest(map, current_loc, [FOOD_SYMBOL])
 
   if !food_loc
@@ -96,18 +84,39 @@ def seek_food(gamestate, map, current_loc)
   move
 end
 
-def avoid_enemies(gamestate, map, current_loc)
-  # pseudocode:
-  # 1. find nearest enemy
-  # 1. avoid it!
+# 1. Find nearest food
+# 2. Move towards it
+def desperately_seek_food(gamestate, map, current_loc)
+  food_loc, _ = find_nearest(map, current_loc, [FOOD_SYMBOL])
 
+  if !food_loc
+    move = avoid_enemies(gamestate, map, current_loc)
+    puts "!! No food available, so avoiding enemies to the: %s" % move
+    return move
+  end
+
+  puts "nearest food_loc: (%i,%i)" % food_loc.reverse
+
+  # valid move towards food
+  move = find_valid_heading(map, current_loc, food_loc)
+
+  if move.nil?
+    move = find_escape(map, current_loc)
+    puts "!!! Can't find valid path to food, so escaping to the: %s" % move
+    return move
+  end
+
+  return move
+end
+
+# 1. find nearest enemy
+# 2. Run away!
+def avoid_enemies(gamestate, map, current_loc)
   enemy_loc, _ = find_nearest(map, current_loc, ENEMY_SYMBOLS)
   
   if enemy_loc
     move = find_valid_heading(map, current_loc, enemy_loc, true)
   end
-
-
 
   if move.nil?
     move = find_escape(map, current_loc)
@@ -118,6 +127,9 @@ def avoid_enemies(gamestate, map, current_loc)
   move
 end
 
+##
+## utilities
+##
 
 def find_map(gamestate)
   board = gamestate[:board]
@@ -295,7 +307,7 @@ def find_next_loc(map, loc, move)
 end
 
 def collision?(map, loc, move)
-  puts "checking (%i,%i):%s" % [loc[1],loc[0],move]
+  # puts "checking (%i,%i):%s" % [loc[1],loc[0],move]
   ok_cells = [FOOD_SYMBOL]
 
   next_loc = find_next_loc(map, loc, move)
