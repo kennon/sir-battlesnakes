@@ -7,32 +7,58 @@ HAZARD_SYMBOL = 'X'
 def find_next_move(gamestate)
   board = !!gamestate && gamestate[:board]
   return nil unless board
-
   snake_name = gamestate[:you][:name]
 
-  _, strategy = snake_name.match(/^.*_(.*)$/).to_a
-  puts strategy
-
   map, current_loc = find_map(gamestate)
-  pp map.reverse
-  puts "#{strategy}: current_loc: (%i,%i)" % current_loc.reverse
+  # puts_map(map)
 
-  case strategy
-  when 'foodseeker'
-    food_seeker(gamestate, map, current_loc)
-  when 'avoider'
-    avoider(gamestate, map, current_loc)
+  puts "#{snake_name}: current_loc: (%i,%i)" % current_loc.reverse
+
+  sir_robin(gamestate, map, current_loc)
+end
+
+def sir_robin(gamestate, map, current_loc)
+  # pseudocode:
+  # 1. if health < 20, go towards food
+  # 1. else find nearest enemy
+  # 1. avoid it!
+
+  health = gamestate[:you][:health]
+
+  if health >= 50
+    return avoid_enemies(gamestate, map, current_loc)
+
+  elsif health < 20
+    food_loc, _ = find_nearest(map, current_loc, [FOOD_SYMBOL])
+
+    if !food_loc
+      move = avoid_enemies(gamestate, map, current_loc)
+      puts "!! No food available, so using avoid_enemies: %s" % move
+      return move
+    end
+
+    puts "nearest food_loc: (%i,%i)" % food_loc.reverse
+
+    # valid move towards food
+    move = find_valid_heading(map, current_loc, food_loc)
+
+    if move.nil?
+      move = find_escape(map, current_loc)
+      puts "!!! Can't find valid path to food, so trying to escape to the: %s" % move
+      return move
+    end
+
+    return move
   else
-    avoider_but_eat_when_hungry(gamestate, map, current_loc)
+    return seek_food(gamestate, map, current_loc)
   end
 end
 
-def food_seeker(gamestate, map, current_loc)
-  # pseudocode:
-  # 1. find nearest food
-  # 1. plot path to food
-  # 1. if enemy head is adjacent to target square, avoid enemy head
-
+# pseudocode:
+# 1. find nearest food
+# 1. plot path to food
+# 1. if enemy head is adjacent to target square, avoid enemy to prevent head-to-head collision
+def seek_food(gamestate, map, current_loc)
   food_loc, _ = find_nearest(map, current_loc, [FOOD_SYMBOL])
 
   if !food_loc
@@ -63,14 +89,14 @@ def food_seeker(gamestate, map, current_loc)
 
   if move.nil?
     move = find_escape(map, current_loc)
-    puts "!!! Can't find valid path to food, so trying to escape to the %s!" % move
+    puts "!!! Can't find valid path to food, so trying to escape to the: %s!" % move
     return move
   end
 
   move
 end
 
-def avoider(gamestate, map, current_loc)
+def avoid_enemies(gamestate, map, current_loc)
   # pseudocode:
   # 1. find nearest enemy
   # 1. avoid it!
@@ -81,6 +107,8 @@ def avoider(gamestate, map, current_loc)
     move = find_valid_heading(map, current_loc, enemy_loc, true)
   end
 
+
+
   if move.nil?
     move = find_escape(map, current_loc)
     puts "!!! Can't find valid path away from enemies, so trying to escape to the %s!" % move
@@ -90,42 +118,6 @@ def avoider(gamestate, map, current_loc)
   move
 end
 
-def avoider_but_eat_when_hungry(gamestate, map, current_loc)
-  # pseudocode:
-  # 1. if health < 20, go towards food
-  # 1. else find nearest enemy
-  # 1. avoid it!
-
-  health = gamestate[:you][:health]
-
-  if health >= 50
-    return avoider(gamestate, map, current_loc)
-
-  elsif health < 20
-    food_loc, _ = find_nearest(map, current_loc, [FOOD_SYMBOL])
-
-    if !food_loc
-      move = avoider(gamestate, map, current_loc)
-      puts "!! No food available, so using avoider: %s" % move
-      return move
-    end
-
-    puts "nearest food_loc: (%i,%i)" % food_loc.reverse
-
-    # valid move towards food
-    move = find_valid_heading(map, current_loc, food_loc)
-
-    if move.nil?
-      move = find_escape(map, current_loc)
-      puts "!!! Can't find valid path to food, so trying to escape to the: %s" % move
-      return move
-    end
-
-    return move
-  else
-    return food_seeker(gamestate, map, current_loc)
-  end
-end
 
 def find_map(gamestate)
   board = gamestate[:board]
@@ -323,4 +315,10 @@ end
 
 def map_dimensions(map)
   [map.size, map[0].size]
+end
+
+def puts_map(map)
+  map.reverse.each do |row|
+    puts row.collect { |cell| cell.nil? ? ' ' : cell }.join
+  end
 end
