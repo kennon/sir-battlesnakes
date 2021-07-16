@@ -25,13 +25,23 @@ class SirRobin2
 
     health = gamestate[:you][:health]
     move = nil
+
+    # calculate the accessible squares from the next move in each direction
     valid_path_counts = find_valid_path_counts(map, current_loc)
 
-    if health >= 50
+    if health > 75
+      puts "+Avoiding all"
+      move = avoid_all(gamestate, map, current_loc, valid_path_counts)
+
+    elsif health > 50
       puts "+Avoiding enemies"
       move = avoid_enemies(gamestate, map, current_loc, valid_path_counts)
 
-    elsif health > 15
+    elsif health > 25
+      puts "+Meanly seeking food"
+      move = meanly_seek_food(gamestate, map, current_loc, valid_path_counts)
+
+    elsif health > 10
       puts "+Nicely seeking food"
       move = nicely_seek_food(gamestate, map, current_loc, valid_path_counts)
 
@@ -47,6 +57,24 @@ class SirRobin2
   ### main behavior logic
   ###
 
+  # 1. find nearest anything
+  # 2. Run away!
+  def avoid_all(gamestate, map, current_loc, valid_path_counts)
+    obj_loc, _ = find_nearest(map, current_loc, ENEMY_SYMBOLS + [FOOD_SYMBOL])
+    
+    if obj_loc
+      move = find_valid_heading(map, current_loc, obj_loc, true, valid_path_counts)
+    end
+
+    if move.nil? || head_to_head_loss?(gamestate, map, current_loc, move) || valid_path_counts[move] < snake_length(gamestate)
+      move = find_escape_move(map, current_loc)
+      puts "!!! Can't find valid path away from enemies, so trying to escape to the: #{move}!"
+      return move
+    end
+
+    move
+  end
+
   # 1. find nearest enemy
   # 2. Run away!
   def avoid_enemies(gamestate, map, current_loc, valid_path_counts)
@@ -56,9 +84,48 @@ class SirRobin2
       move = find_valid_heading(map, current_loc, enemy_loc, true, valid_path_counts)
     end
 
-    if move.nil? || valid_path_counts[move] < snake_length(gamestate)
+    if move.nil? || head_to_head_loss?(gamestate, map, current_loc, move) || valid_path_counts[move] < snake_length(gamestate)
       move = find_escape_move(map, current_loc)
       puts "!!! Can't find valid path away from enemies, so trying to escape to the: #{move}!"
+      return move
+    end
+
+    move
+  end
+
+  # 1. Find nearest food
+  # 2. Plot path to food
+  # 3. if enemy head is adjacent to target square, run away to prevent head-to-head collision
+  def meanly_seek_food(gamestate, map, current_loc, valid_path_counts)
+    food_loc, _ = find_nearest(map, current_loc, [FOOD_SYMBOL])
+
+    if !food_loc
+      move = random_move
+      puts "!! Can't find food, punting with %s" % move
+      return move
+    end
+
+    puts "nearest food_loc: (%i,%i)" % food_loc.reverse
+
+    # valid move towards food
+    move = find_valid_heading(map, current_loc, food_loc, false, valid_path_counts)
+
+    if move.nil? || valid_path_counts[move] < snake_length(gamestate)
+      move = find_escape_move(map, current_loc)
+      puts "!!! Can't find valid path to food, so trying to escape to the: #{move}"
+      return move
+    end
+
+    next_loc = find_next_loc(map, current_loc, move)
+
+    if head_to_head_loss?(gamestate, map, current_loc, move)
+      move = find_valid_heading(map, current_loc, enemy_loc, true, valid_path_counts)
+      puts "!!!!! ENEMY PROXMITY ALERT! avoiding to the: %s" % move
+    end
+
+    if move.nil? || valid_path_counts[move] < snake_length(gamestate)
+      move = find_escape_move(map, current_loc)
+      puts "!!! Can't find valid path to food, so trying to escape to the: #{move}"
       return move
     end
 
@@ -327,6 +394,20 @@ class SirRobin2
     true
   end
 
+  def head_to_head_loss?(gamestate, map, loc, move)
+    next_loc = find_next_loc(map, loc, move)
+    enemy_loc, distance = find_nearest(map, next_loc, ENEMY_SYMBOLS)
+
+    if enemy_loc && distance < 1.4
+      my_length = find_snake(gamestate, loc)[:length]
+      enemy_length = find_snake(gamestate, enemy_loc)[:length]
+
+      return enemy_length > my_length
+    end
+
+    false
+  end
+
   def find_escape_move(map, loc)
     moves = POSSIBLE_MOVES.reject { |move| collision?(map, loc, move) }
     puts "possible escape moves: #{moves}"
@@ -381,5 +462,13 @@ class SirRobin2
 
   def snake_length(gamestate)
     gamestate[:you][:length]
+  end
+
+  def find_snake(gamestate, loc)
+    gamestate[:board][:snakes].each do |snake|
+      snake[:body].each do |xy|
+        return snake if loc[0] == xy[:y] && loc[1] == xy[:x]
+      end
+    end
   end
 end
