@@ -1,0 +1,3 @@
+#!/bin/bash
+PORT=${PORT:-9292}
+bundle exec rerun --no-notify "rackup config.ru --port $PORT"
