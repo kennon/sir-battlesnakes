@@ -71,14 +71,11 @@ class SirLauncelot
 
     # if only 0 or 1 possible moves then skip logic
     if possible_moves.size < 1
-      puts "++++"
       puts "++ NO POSSIBLE MOVES!"
-      puts "++++"
-      return
+      impossible_moves = find_impossible_moves(gamestate, map, current_loc, open_path_counts)
+      return impossible_moves[0]&.first
     elsif possible_moves.size < 2
-      puts "++++"
       puts "++ ONLY ONE POSSIBLE MOVE"
-      puts "++++"
       return possible_moves[0]&.first
     end
 
@@ -86,10 +83,8 @@ class SirLauncelot
     puts "max_enemy_length: #{max_enemy_length}"
 
     if max_enemy_length > 0 && my_length > max_enemy_length
-      puts "++++"
       puts "++ Attacking nearest enemy"
       puts "++ my_length #{my_length} > max_enemy_length #{max_enemy_length}"
-      puts "++++"
 
       target_loc, _ = find_nearest_target(map, current_loc, ENEMY_SYMBOLS)
 
@@ -100,17 +95,13 @@ class SirLauncelot
       move = attack_nearest_enemy(gamestate, map, current_loc, open_path_counts)
 
     elsif proximity_alert?(gamestate, map, current_loc, 3)
-      puts "++++"
       puts "++ Avoiding nearest enemy"
       puts "++ enemy proximity alert"
-      puts "++++"
       move = avoid_nearest_enemy(gamestate, map, current_loc, open_path_counts)
 
     else
-      puts "++++"
       puts "++ Seeking food"
       puts "++ my_length #{my_length} <= max_enemy_length #{max_enemy_length}"
-      puts "++++"
 
       move = seek_nearest_food(gamestate, map, current_loc, open_path_counts)
     end
@@ -127,6 +118,19 @@ class SirLauncelot
       elsif head_to_head_loss?(gamestate, map, current_loc, move)
         puts "  #{move}: head to head loss"
         nil
+      else
+        puts "  #{move}: #{open_path_counts[move]} open"
+        [move, open_path_counts[move]]
+      end
+    end.compact
+  end
+
+  def find_impossible_moves(gamestate, map, current_loc, open_path_counts)
+    puts "evaluating possible moves:"
+    POSSIBLE_MOVES.collect do |move|
+      if collision?(map, current_loc, move)
+        puts "  #{move}: collision"
+        [move, -1]
       else
         puts "  #{move}: #{open_path_counts[move]} open"
         [move, open_path_counts[move]]
@@ -359,6 +363,7 @@ class SirLauncelot
     visited[[loc1.x, loc1.y]] = true
 
     paths = POSSIBLE_MOVES.collect do |move|
+      next if collision?(map, loc1, move)
       next_loc = find_next_loc(map, loc1, move)
       next if !next_loc
       next if visited[[next_loc.x, next_loc.y]]
