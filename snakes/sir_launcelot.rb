@@ -135,7 +135,7 @@ class SirLauncelot
         puts "  #{move}: #{open_path_counts[move]} open"
         [move, open_path_counts[move]]
       end
-    end.compact
+    end.compact.sort_by { |(_, x)| x }.reverse
   end
 
   ###
