@@ -5,7 +5,25 @@ class SirRobin2
   FOOD_SYMBOL = '.'
   HAZARD_SYMBOL = 'X'
 
-  def call(gamestate)
+  def appearance
+    {
+      apiversion: "1",        
+      author: "kennon",     # TODO: Your Battlesnake Username
+      color: "#4A412A",     # TODO: Personalize
+      head: "tongue",       # TODO: Personalize
+      tail: "curled",       # TODO: Personalize
+    }
+  end
+
+  def start(data)
+    # no-op
+  end
+
+  def end(data)
+    # no-op
+  end
+
+  def move(gamestate)
     board = !!gamestate && gamestate[:board]
     return nil unless board
     snake_name = gamestate[:you][:name]
