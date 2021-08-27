@@ -28,9 +28,9 @@ class SirLauncelot
     {
       apiversion: "1",
       author: "kennon",     # TODO: Your Battlesnake Username
-      color: "#4A412A",     # TODO: Personalize
-      head: "tongue",       # TODO: Personalize
-      tail: "curled",       # TODO: Personalize
+      color: "#009900",     # TODO: Personalize
+      head: "evil",       # TODO: Personalize
+      tail: "bolt",       # TODO: Personalize
     }
   end
 
