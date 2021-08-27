@@ -137,6 +137,7 @@ class SirRobin2
     next_loc = find_next_loc(map, current_loc, move)
 
     if head_to_head_loss?(gamestate, map, current_loc, move)
+      enemy_loc, _ = find_nearest(map, current_loc, ENEMY_SYMBOLS)
       move = find_valid_heading(map, current_loc, enemy_loc, true, valid_path_counts)
       puts "!!!!! ENEMY PROXMITY ALERT! avoiding to the: %s" % move
     end

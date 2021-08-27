@@ -1,4 +1,5 @@
 #!/bin/bash
 PORT=${PORT:-9292}
-export SNAKE=${SNAKE:-"SirRobin2"}
+export SNAKE=${SNAKE:-SirLauncelot}
+echo "Running with SNAKE=$SNAKE"
 bundle exec rerun --no-notify "rackup config.ru --port $PORT"

@@ -20,8 +20,8 @@ end
 # TODO: Use this function to decide how your snake is going to look on the board.
 post '/start' do
   data = underscore(env['rack.request.form_hash'])
+  # puts "START>> #{data}"
   SNAKE.start(data)
-  puts "START"
   "OK\n"
 end
 
@@ -35,7 +35,7 @@ post '/move' do
   move = SNAKE.move(gamestate)
 
   response = camelcase({ "move": move }).to_json
-  puts ">> #{response}"
+  puts "MOVE>> #{response}"
   response
 end
 
@@ -43,7 +43,7 @@ end
 # It's purely for informational purposes, you don't have to make any decisions here.
 post '/end' do
   data = underscore(env['rack.request.form_hash'])
+  # puts "END>> #{data}"
   SNAKE.end(data)
-  puts "END"
   "OK\n"
 end
